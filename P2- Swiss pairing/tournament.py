@@ -15,29 +15,24 @@ def ConnectAndCommit(query, *args):
     DB.close()
 
 
-def ConnectAndAsk(query):
+def ConnectAndAsk(query, *args):
     """Connect to the PostgreSQL database.  Returns a database query."""
     global resualts
     DB = psycopg2.connect("dbname=tournament")
     cur = DB.cursor()
-    cur.execute(query)
+    cur.execute(query, *args)
     resualts = cur.fetchall()
     DB.close()
 
 
 def deleteMatches():
     """Resets the matches table. for a clear tournament"""
-    ConnectAndCommit("Drop Table Match_Record;")
-    ConnectAndCommit("""
-        CREATE TABLE Match_Record (Match_Id SERIAL Primary Key,
-                            Player1 int REFERENCES Players(Id),
-                            Player2  int REFERENCES Players(Id),
-                            Winner int REFERENCES Players(Id)); """)
+    ConnectAndCommit("Delete From Match_Record;")
 
 
 def CheckIfPlayerIsExist(Player_name):
     """ Checks in the database if the player name is exist, ot if there is more then one player with that name"""  # noqa
-    ConnectAndAsk("Select count(*) from players where Full_name = ('%s');" % Player_name.lower())  # noqa
+    ConnectAndAsk("Select count(*) from players where Full_name = (%s);", (Player_name.lower(),))  # noqa
     global player_exist
     for row in resualts:
         if int(row[0]) == 1:
@@ -54,7 +49,7 @@ def deletePlayers(Player_name):
     if Player_name == 'all':
         ConnectAndCommit("Delete From players")
     elif player_exist == 1:
-        ConnectAndCommit("Delete From players where Full_name = ('%s');" % Player_name)  # noqa
+        ConnectAndCommit("Delete From players where Full_name = (%s);", (Player_name,))  # noqa
         print "The player was deleted"
     elif player_exist == 2:
         print "There is more then one player with this name."
@@ -109,13 +104,20 @@ def playerStandings():
     return resualts
 
 
-def reportMatch(Player1, Player2):
+def reportMatch(winner, loser):
     """Records the outcome of a single match between two players.
 
     Args:
       winner:  the id number of the player who won
       loser:  the id number of the player who lost
     """
+    ConnectAndCommit("""Insert into Match_Record values(default, %s, %s, %s);
+                        Update player_record set matches_played = matches_played +1 where id in(%s,%s);
+                        Update player_record set record = record +1 where id = %s;""" % (winner, loser, winner, winner, loser, winner))   # noqa
+
+
+def SimulateMatch(Player1, Player2):
+    """Simulate a match between player 1 and player 2"""
     winner = random.choice([Player1, Player2])
     ConnectAndCommit("""Insert into Match_Record values(default, %s, %s, %s);
                         Update player_record set matches_played = matches_played +1 where id in(%s,%s);

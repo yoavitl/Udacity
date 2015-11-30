@@ -1,7 +1,7 @@
 -- Table definitions for the tournament project.
 
 -- The Primary table which connects the players and their id
-CREATE TABLE Players (Id SERIAL Primary Key not null, 
+CREATE TABLE Players (Id SERIAL Primary Key, 
 					 Full_Name TEXT not null);
 
 -- The second table that registers and save the match data for the players

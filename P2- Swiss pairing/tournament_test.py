@@ -142,8 +142,8 @@ def fullGamesCycle():
     for i in range(0, NumbeOfRounds):
         standings = playerStandings()
         [id1, id2, id3, id4] = [row[0] for row in standings]
-        reportMatch(id1, id2)
-        reportMatch(id3, id4)
+        SimulateMatch(id1, id2)
+        SimulateMatch(id3, id4)
     standings = playerStandings()
     [name1, name2, name3, name4] = [row[1] for row in standings]
     print "And the winner of the tournomant is: %s" % name1

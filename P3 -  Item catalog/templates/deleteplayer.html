@@ -1,0 +1,20 @@
+<html>
+
+<head>
+  <link rel=stylesheet type=text/css href="{{ url_for('static', filename='style.css') }}">
+</head>
+
+<body>
+<div class="subheader">
+<h1> Are you sure you want to delete {{DeletePLayer.name}}? </h1>
+</div>
+<form action="{{ url_for('DeletePlayer',team_id = DeletePLayer.team_id, player_id = DeletePLayer.id)}}" method = 'POST'>
+
+<input type='submit', value = 'Delete' class='button'>
+
+</form>
+
+<a href="{{url_for('TeamPage', team_id = team_id )}}" method = 'GET'>Cancel</a>
+</body>
+
+</html>

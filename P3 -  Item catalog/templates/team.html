@@ -1,0 +1,27 @@
+<html>
+<head>
+	<title> {{team.name}}</title>
+<link rel=stylesheet type=text/css href="{{ url_for('static', filename='style.css') }}"></head>
+	</head>
+<body>
+	<div class = 'flash'>
+	{% with messages = get_flashed_messages() %}
+	{% if messages %}
+	<ul>
+	{% for message in messages %}
+	  <li><strong>{{message}}</strong></li>
+	  {% endfor %}
+	</ul>
+	{% endif %}
+	{% endwith %}
+</div>
+		<div class = 'subheader'>
+		<h1>{{team.name}}</h1>
+	</div>
+	<div align='center'>
+			{% block table %}
+			{% endblock %}
+	</div>
+		<a href='/'>Back</a>
+	</body>
+</html>

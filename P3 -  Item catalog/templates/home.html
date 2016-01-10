@@ -1,0 +1,44 @@
+<html>
+<head>
+<link rel=stylesheet type=text/css href="{{ url_for('static', filename='style.css') }}"></head>
+<body>
+	<div class = 'flash'>
+		      {% with messages = get_flashed_messages() %}
+      {% if messages %}
+
+        <ul>
+        {% for message in messages %}
+            <li> <strong> {{ message }} </strong> </li>
+        {% endfor %}
+        </ul>
+        {% endif %}
+    {% endwith %}
+
+</div>
+		<div class = 'header'>
+		<h1>The English Premier League</h1>
+	</div>
+	<div class = 'login'>
+	{% block conn %}
+	{% endblock %}
+</div>
+	<div align = 'center'>
+	<table class= 'table'>
+		<tr>
+			<th> Id </th>
+			<th> Name </th>
+			<th> Stadium </th>
+			<th> symbol </th>
+		</tr>
+		{% for i in team %}
+		<tr>
+			<td><a href="/Team/{{i.id}}">{{i.id}}</a></td>
+			<td>{{i.name}}</td>
+			<td>{{i.location}}</td>
+			<td><img src ="{{i.symbol}}"></td>
+		</tr>
+		{% endfor %}
+	</table>
+</div>
+	</body>
+</html>

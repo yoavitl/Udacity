@@ -1,0 +1,41 @@
+
+<html>
+<head>
+  <link rel=stylesheet type=text/css href="{{ url_for('static', filename='style.css') }}"></head>
+</head>
+<body>
+	<div class = 'flash'>
+<!--MESSAGE FLASHING EXAMPLE -->
+{% with messages = get_flashed_messages() %}
+{% if messages %}
+
+<ul>
+{% for message in messages %}
+  <li><strong>{{message}}</strong></li>
+  {% endfor %}
+</ul>
+{% endif %}
+{% endwith %}
+</div>
+  <div class="subheader">
+<h1> Edit player </h1>
+</div>
+<div class='player'>
+<form action="{{url_for('editPlayer', team_id = team_id, player_id = player_id)}}" method = 'POST'>
+
+<p>Name:</p>
+
+<input type='text' size='30' name='name' placeholder = '{{player.name}}'>
+
+<p> Image URL: </p>
+<input type='text' size='30' name='imageURL' placeholder = '{{player.image}}'>
+</br>
+<input type='submit' value='Change' class="button">
+
+</form>
+</div>
+<a href="{{url_for('TeamPage', team_id = team_id )}}" method = 'GET'>Cancel</a>
+
+</body>
+
+</html>

@@ -1,0 +1,54 @@
+body            {font-family: Trebuchet MS;background-color: #0b193f;}
+
+
+.login {
+    border-radius: 100px;
+    background: rgb(36, 140, 86);
+    width: 30px;
+    height: 30px;
+    margin-left: 1px;
+    padding: 7px;
+    text-align: center;
+}
+h1      { color: #FFFFFF;}
+a {text-decoration: none; color:#FFFFCC;}
+a.in {font-size: 30px;}
+a.out {font-size: 15px;}
+.pane {position:absolute; left: 25%; border: 2px solid;
+    border-radius: 25px; padding: 5px; margin: 5px; border-color: #999999; background-color: #333333 }
+.header         {left:50%; text-align: center; margin-bottom: -30px;}
+.subheader         {left:50%; text-align: center;}
+.name {width:50%;display: inline-block; float: left;}
+
+
+.flash          { background: #248c56; }
+
+table{
+   align: center;
+}
+th {
+    background-color: #248c56;
+    color: white;
+}
+tr:nth-child(odd) {background-color: #30db5b;}
+tr:nth-child(even) {
+    background-color: #73e830;
+}
+img { height:60; width:60;}
+
+.player {
+  background-color: #73e830;
+  width: 218px;
+  margin-left: 41%;
+  border-radius: 38px;
+}
+p{
+  color:#0b193f;
+  margin-left: 40%;
+}
+input{
+  margin-left: 1%;
+}
+input.button{
+  margin-left: 40%;
+}

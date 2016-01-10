@@ -1,0 +1,32 @@
+<html>
+
+<head>
+  <link rel=stylesheet type=text/css href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+<div class="subheader">
+<h1> New Player Details </h1>
+</div>
+<div class='player'>
+  <form action="{{url_for('newPlayer', team_id = team_id )}}" method = 'POST'>
+   <p>Name:</p>
+    <input type='text' size='30' name='name'>
+   <p>Desription:</p>
+    <input type='text' size='30' name='description'>
+   <p>position:</p>
+    <input list="positions" size='30' name='position' placeholder = 'click here -->'>
+    <datalist id="positions">
+      <option value="Goalkeeper">
+      <option value="Forward">
+      <option value="Defender">
+      <option value="Midfilder">
+    </datalist>
+  <p>imageURL:</p>
+  <input type='text' size='30' name='imageURL'>
+  </br>
+  <input type='submit' value='Create' class='button'>
+  </form>
+</div>
+<a href='./'>Back</a>
+</body>
+</html>

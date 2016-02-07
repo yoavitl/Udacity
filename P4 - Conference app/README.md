@@ -9,6 +9,7 @@ Register to them and even look in session that each confrence has to offer.
 I implemented the requrments of the session and the speaker just like the conference,
 thinking that the Session is like a conference inside a conference. 
 I added also models and forms for the speaker but I havn't made the option to added speakers. 
+
 ### Task 1
 ##### Added functioncs
 - `conference.getConferenceSessions()` 
@@ -21,15 +22,18 @@ I added also models and forms for the speaker but I havn't made the option to ad
 - `SessionForms`
 - `Speaker`
 - `SpeakerForm`
+
 ### Task 2
 ##### Added functioncs
 - `conference.addSessionToWishlist()`    
 - `conference.getSessionsInWishlist()`   
 - `conference.deleteSessionInWishlist()`
+
 ### Task 3 
 ##### Added Queries 
 -`conference.sessionquery()` - Query all motivation sesssions    
 -`conference.getLongSessions()` - Query all the sessions longer then a given time
+
 #### Problem 
 >Let’s say that you don't like workshops and you don't like sessions after 7 pm. What is the problem for >implementing this query?   
 

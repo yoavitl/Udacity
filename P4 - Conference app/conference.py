@@ -24,6 +24,9 @@ from models import TeeShirtSize
 from models import Session
 from models import SessionForm
 from models import SessionForms
+from models import Speaker
+from models import SpeakerForm
+from models import SpeakerForms
 
 from settings import WEB_CLIENT_ID
 from settings import ANDROID_AUDIENCE
@@ -67,6 +70,13 @@ DEFAULTSession = {
     "startTime": 11.11,
     "highlights": ["Motivation", "Programming"],
     }
+ 
+DEFAULTSPEAKER = {
+    "expertise": ["Jack of Trades","Master of None"],
+    "lecturs": ["The Importance of Python"],
+    "age": 42.0,
+    "city": "Tel-Aviv",
+    }
 
 CONF_GET_REQUEST = endpoints.ResourceContainer(
     message_types.VoidMessage,
@@ -95,16 +105,25 @@ SESSION_BY_SPEAKER = endpoints.ResourceContainer(
 )
 
 SESSION_ADD_TO_WISHLIST = endpoints.ResourceContainer(
-    websafeSsnKey=messages.StringField(1),
+    websafeSessionKey=messages.StringField(1),
 )
 
 SESSION_REMOVE_WISHLIST = endpoints.ResourceContainer(
-    websafeSsnKey=messages.StringField(1),
+    websafeSessionKey=messages.StringField(1),
+)
+
+HIGHLIGHT_SESSION = endpoints.ResourceContainer(
+    message_types.VoidMessage,
+    highlight=messages.StringField(1),
 )
 
 LONG_SESSION = endpoints.ResourceContainer(
     message_types.VoidMessage,
     duration=messages.FloatField(1),
+)
+
+SPEAKER_GET_REQUEST = endpoints.ResourceContainer(
+    SpeakerForm,
 )
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
@@ -553,21 +572,31 @@ class ConferenceApi(remote.Service):
         for field in sf.all_fields():
             if hasattr(session, field.name):
                 # convert Date to date string; just copy others
-                if field.name.endswith('Date'):
+                if field.name.endswith('date'):
                     setattr(sf, field.name, str(getattr(session, field.name)))
                 else:
                     setattr(sf, field.name, getattr(session, field.name))
-            elif field.name == "websafeSsnKey":
+            elif field.name == "websafeSessionKey":
                 setattr(sf, field.name, session.key.urlsafe())
         sf.check_initialized()
         return sf
+
+    def _copySpeakerToForm(self, speaker):
+        """Copy relevant fields from Speaker to SpeakerForm."""
+        speakerf = SpeakerForm()
+        for field in speakerf.all_fields():
+            if hasattr(speaker, field.name):
+                setattr(speakerf, field.name, getattr(speaker, field.name))
+            elif field.name == "websafeSpeakerKey":
+                setattr(speakerf, field.name, speaker.key.urlsafe())
+        speakerf.check_initialized()
+        return speakerf
 
     @endpoints.method(CONF_GET_REQUEST, SessionForms,
                       path='conference/sessions/{websafeConferenceKey}',
                       http_method='GET', name='getConferenceSessions')
     def getConferenceSessions(self, request):
-        """Udacity Project Add-on req #1."""
-        # Given a conference, return all sessions
+        """Given a conference, return all sessions"""
         sessions = Session.query()
         sessions = sessions.filter(Session.webSafeConfId == request.websafeConferenceKey)   # noqa
 
@@ -578,12 +607,12 @@ class ConferenceApi(remote.Service):
                       path='session/{websafeConferenceKey}',
                       http_method='POST', name='createSession')
     def createSession(self, request):
-        """Udacity Project Add-on req #4."""
-        #  Create or update Session object
+        """Create or update Session object"""
         if not request.name:
             raise endpoints.BadRequestException("Session 'name' field required")   # noqa
 
-        # check for authorization, valid conference key, and that the current user is the conference orgainizer   # noqa
+        # check for authorization, valid conference key,
+        # and that the current user is the conference orgainizer
         user = endpoints.get_current_user()
         if not user:
             raise endpoints.UnauthorizedException("Authorization required")
@@ -617,7 +646,7 @@ class ConferenceApi(remote.Service):
             data['date'] = datetime.strptime(data['date'][:10], "%Y-%m-%d").date()   # noqa
 
         data['webSafeConfId'] = request.websafeConferenceKey
-        del data['websafeSsnKey']
+        del data['websafeSessionKey']
 
         # creation of Session, record the key to get the item & return (modified) SessionForm   # noqa
         sessionKey = Session(**data).put()
@@ -633,8 +662,8 @@ class ConferenceApi(remote.Service):
                       path='conference/{websafeConferenceKey}/sessions/{typeofs}',    # noqa
                       http_method='GET', name='getSessionsByType')
     def getSessionsByType(self, request):
-        """Udacity Project Add-on req #2."""
-        # Given a conference, return all sessions of a specified type (eg lecture, keynote, workshop)   # noqa
+        """Given a conference, return all sessions of a specified
+        type (eg lecture, keynote, workshop)"""
         sessions = Session.query()
         sessions = sessions.filter(Session.webSafeConfId == request.websafeConferenceKey)   # noqa
         sessions = sessions.filter(Session.typeofs == request.typeofs)
@@ -646,23 +675,59 @@ class ConferenceApi(remote.Service):
                       path='sessions/{speaker}',
                       http_method='GET', name='getSessionsBySpeaker')
     def getSessionsBySpeaker(self, request):
-        """Udacity Project Add-on req #3."""
-        #  Given a speaker, return all sessions given by this particular speaker, across all conferences   # noqa
+        """Given a speaker, return all sessions given by this particular speaker,
+        across all conferences"""
         sessions = Session.query()
         sessions = sessions.filter(Session.speaker == request.speaker)
 
         # return set of SessionForm objects one per Session
         return SessionForms(items=[self._copySessionToForm(sesn)
                             for sesn in sessions])
+  
+    @endpoints.method(SPEAKER_GET_REQUEST, SpeakerForm,
+                      path='Speaker/createspeaker',
+                      http_method='POST', name='createspeaker')
+    def createspeaker(self, request):
+        """Create a Speaker object"""
+        if not request.name:
+            raise endpoints.BadRequestException("Speaker must have a name")
+
+        # check for authorization, valid conference key, and that the current user is the conference orgainizer   # noqa
+        user = endpoints.get_current_user()
+        if not user:
+            raise endpoints.UnauthorizedException("Authorization required")
+        # copy SpeakerForm/ProtoRPC Message into dict
+        data = {field.name: getattr(request, field.name) for field in request.all_fields()}   # noqa
+        del data['websafeSpeakerKey']
+     
+        # add default values for those missing (both data model & outbound Message)   # noqa
+        for df in DEFAULTSPEAKER:
+            if data[df] in (None, []):
+                data[df] = DEFAULTSPEAKER[df]
+                setattr(request, df, DEFAULTSPEAKER[df])
+
+        # creation of Session, record the key to get the item & return (modified) SessionForm   # noqa
+        speakerKey = Speaker(**data).put()
+        return self._copySpeakerToForm(speakerKey.get())
+
+    @endpoints.method(SPEAKER_GET_REQUEST, SpeakerForms,
+                      path='Speaker/showspeakers',
+                      http_method='GET', name='ShowSpeakers')
+    def getSpeakers(self, request):
+        """Show all Availble speakers"""
+        speakers = Speaker.query().fetch()
+
+        # return set of SessionForm objects one per Session
+        return SpeakerForms(items=[self._copySpeakerToForm(sp) for sp in speakers])   # noqa
 
     # Part 2- Add Wishlist
 
     @endpoints.method(SESSION_ADD_TO_WISHLIST, BooleanMessage,
-                      path='sessions/addwish/{websafeSsnKey}',
+                      path='conferences/sessions/addtowishlist/{websafeSessionKey}',
                       http_method='POST', name='addSessionToWishlist')
     def addSessionToWishlist(self, request):
-        """Udacity Project Add-on req #5."""
-        # Adds the session to the user's list of sessions they are interested in attending   # noqa
+        """Adds the session to the user's list of sessions
+        they are interested in attending"""
 
         # make sure user is authed
         user = endpoints.get_current_user()
@@ -672,11 +737,11 @@ class ConferenceApi(remote.Service):
         profile = self._getProfileFromUser()
         retval = True
         # Check if the user already have the session key in his wishlist
-        if request.websafeSsnKey in profile.WishList:
+        if request.websafeSessionKey in profile.WishList:
             raise endpoints.BadRequestException("You have this Session in your Wishlist")  # noqa
             retval = False
         else:
-            profile.WishList.append(request.websafeSsnKey)
+            profile.WishList.append(request.websafeSessionKey)
         profile.put()
         return BooleanMessage(data=retval)
 
@@ -684,8 +749,7 @@ class ConferenceApi(remote.Service):
                       path='conferences/sessions/wishlist',
                       http_method='GET', name='getSessionsInWishlist')
     def getSessionsInWishlist(self, request):
-        """Udacity Project Add-on req #6."""
-        # query for all the sessions in a conference that the user is interested in   # noqa
+        """query for all the sessions in a conference that the user is interested in"""  # noqa
         prof = self._getProfileFromUser()  # get user Profile
         Session_keys = [ndb.Key(urlsafe=wsck) for wsck in prof.WishList]
         sessions = ndb.get_multi(Session_keys)
@@ -695,11 +759,10 @@ class ConferenceApi(remote.Service):
                             for sesn in sessions])
 
     @endpoints.method(SESSION_REMOVE_WISHLIST, BooleanMessage,
-                      path='sessions/delete/{websafeSsnKey}',
-                      http_method='POST', name='deleteSessionInWishlist')
+                      path='conferences/sessions/deletewishlist/{websafeSessionKey}',
+                      http_method='DELETE', name='deleteSessionInWishlist')
     def deleteSessionInWishlist(self, request):
-        """Udacity Project Add-on req #7."""
-        # removes a session from the users list of sessions they are interested
+        """removes a session from the users list of sessions they are interested"""
 
         # make sure user is authed
         user = endpoints.get_current_user()
@@ -708,11 +771,12 @@ class ConferenceApi(remote.Service):
         # Get user profile
         profile = self._getProfileFromUser()
         sessions = Session.query()
-        retval = True
+        retval = None
         # Check if the user have the session key in his wishlist
-        if request.websafeSsnKey in profile.WishList:
-            profile.WishList.remove(request.websafeSsnKey)
+        if request.websafeSessionKey in profile.WishList:
+            profile.WishList.remove(request.websafeSessionKey)
             profile.put()
+            retval = True
         else:
             raise endpoints.BadRequestException("You Don't have this Session in your Wishlist")  # noqa
             retval = False
@@ -720,14 +784,13 @@ class ConferenceApi(remote.Service):
         return BooleanMessage(data=retval)
 
     # Part 3 - Add Queries
-    @endpoints.method(message_types.VoidMessage, SessionForms,
-                      path='Sessionquery',
-                      http_method='GET', name='Sessionquery')
+    @endpoints.method(HIGHLIGHT_SESSION, SessionForms,
+                      path='sessions/highlight/{highlight}',
+                      http_method='GET', name='getSessionHighlight')
     def Sessionquery(self, request):
-        """Udacity Project Add-on req #8."""
-        # Query all motivation sesssions
+        """Query Sesssions by highlight"""
         sessions = Session.query()
-        sessions = sessions.filter(Session.highlights == "Motivation")
+        sessions = sessions.filter(Session.highlights == request.highlight)
 
         return SessionForms(
             items=[self._copySessionToForm(sesn) for sesn in sessions]
@@ -737,8 +800,7 @@ class ConferenceApi(remote.Service):
                       path='sessions/time/{duration}',
                       http_method='GET', name='getLongSessions')
     def getLongSessions(self, request):
-        """Udacity Project Add-on req #9."""
-        # Return all sessions longer then specific time
+        """Return all sessions longer then specific time"""
         sessions = Session.query()
         sessions = sessions.filter(Session.duration >= request.duration)
 
@@ -749,8 +811,7 @@ class ConferenceApi(remote.Service):
                       path='noworkshopnotlate',
                       http_method='GET', name='SessionQuestion')
     def SessionQuestion(self, request):
-        """Udacity Project Add-on req #10."""
-        # Query for all non-workshop sessions before 7 pm
+        """Query for all non-workshop sessions before 7 pm"""
         sessions = Session.query()
         sessions = sessions.filter(Session.typeofs != "workshop").fetch()
         SecondFilter = []
@@ -776,19 +837,14 @@ class ConferenceApi(remote.Service):
         for session in sessions:
             announcement += "%s, " % session.name
         memcache.set(wsck, announcement[:-2])
-        return announcement
 
     @endpoints.method(CONF_GET_REQUEST, StringMessage,
                       path='conference/{websafeConferenceKey}/featuredspeaker/get',   # noqa
                       http_method='GET', name='getFeaturedSpeaker')
     def getFeaturedSpeaker(self, request):
-        """Udacity Project Add-on req #11."""
         """Return featured speaker for the conference from memcache
         (if there is one, '' if none)"""
         info = memcache.get(request.websafeConferenceKey)
-        if not info:
-            info = ''
-        return StringMessage(data=info)
-
+        return StringMessage(data=info or '')
 
 api = endpoints.api_server([ConferenceApi])  # register API

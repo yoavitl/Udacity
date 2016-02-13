@@ -133,7 +133,7 @@ class SessionForm(messages.Message):
     startTime   = messages.FloatField(7)
     webSafeConfId = messages.StringField(8)
     # create a key for the Session
-    websafeSsnKey  = messages.StringField(9)
+    websafeSessionKey  = messages.StringField(9)
 
 
 class SessionForms(messages.Message):
@@ -158,3 +158,9 @@ class SpeakerForm(messages.Message):
     lecturs     = messages.StringField(3, repeated=True)
     age         = messages.FloatField(4)
     city        = messages.StringField(5)
+    websafeSpeakerKey  = messages.StringField(6)
+
+
+class SpeakerForms(messages.Message):
+    """SpeakerForms -- multiple Speakers outbound form message"""
+    items = messages.MessageField(SpeakerForm, 1, repeated=True)

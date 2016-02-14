@@ -64,7 +64,6 @@ FIELDS = {
             }
 
 DEFAULTSession = {
-    "speaker": "Jhon",
     "duration": 0.45,
     "typeofs": "Keynote",
     "startTime": 11.11,
@@ -91,6 +90,7 @@ CONF_POST_REQUEST = endpoints.ResourceContainer(
 SESSION_GET_REQUEST = endpoints.ResourceContainer(
     SessionForm,
     websafeConferenceKey=messages.StringField(1),
+    websafeSpeakerKey=messages.StringField(2),
 )
 
 SESSION_BY_TYPE = endpoints.ResourceContainer(
@@ -101,7 +101,7 @@ SESSION_BY_TYPE = endpoints.ResourceContainer(
 
 SESSION_BY_SPEAKER = endpoints.ResourceContainer(
     SessionForm,
-    speaker=messages.StringField(1),
+    websafeSpeakerKey=messages.StringField(1),
 )
 
 SESSION_ADD_TO_WISHLIST = endpoints.ResourceContainer(
@@ -604,14 +604,14 @@ class ConferenceApi(remote.Service):
         return SessionForms(items=[self._copySessionToForm(sn) for sn in sessions])   # noqa
 
     @endpoints.method(SESSION_GET_REQUEST, SessionForm,
-                      path='session/{websafeConferenceKey}',
+                      path='session/{websafeConferenceKey}/{websafeSpeakerKey}',
                       http_method='POST', name='createSession')
     def createSession(self, request):
         """Create or update Session object"""
         if not request.name:
             raise endpoints.BadRequestException("Session 'name' field required")   # noqa
 
-        # check for authorization, valid conference key,
+        # check for authorization, valid conference key
         # and that the current user is the conference orgainizer
         user = endpoints.get_current_user()
         if not user:
@@ -631,9 +631,23 @@ class ConferenceApi(remote.Service):
         if user_id != getattr(conf, 'organizerUserId'):
             raise endpoints.UnauthorizedException('Only conference organizer is authorized to add sessions.')   # noqa
 
+        # check for valid speaker key 
+        try:
+            speak = ndb.Key(urlsafe=request.websafeSpeakerKey).get()
+        except TypeError:
+            raise endpoints.BadRequestException("Only string is allowed as websafeSpeakerKey input")  # noqa
+        except Exception, e:
+            if e.__class__.__name__ == 'ProtocolBufferDecodeError':
+                raise endpoints.BadRequestException("The websafeSpeakerKey string is invalid")  # noqa
+            else:
+                raise
+        if not speak:
+            raise endpoints.NotFoundException('No speaker found with key: %s' % request.websafeSpeakerKey)   # noqa
+
         # copy SessionForm/ProtoRPC Message into dict
         data = {field.name: getattr(request, field.name) for field in request.all_fields()}   # noqa
         del data['websafeConferenceKey']
+        del data['websafeSpeakerKey']
 
         # add default values for those missing (both data model & outbound Message)   # noqa
         for df in DEFAULTSession:
@@ -648,11 +662,11 @@ class ConferenceApi(remote.Service):
         data['webSafeConfId'] = request.websafeConferenceKey
         del data['websafeSessionKey']
 
+        data['speaker'] = request.websafeSpeakerKey
         # creation of Session, record the key to get the item & return (modified) SessionForm   # noqa
         sessionKey = Session(**data).put()
         # start the task to update the conference featured speaker if needed
-        if data['speaker'] is not DEFAULTSession['speaker']:
-            taskqueue.add(params={'websafeConferenceKey': request.websafeConferenceKey,    # noqa
+        taskqueue.add(params={'websafeConferenceKey': request.websafeConferenceKey,    # noqa
                           'speaker': data['speaker']},
                           url='/tasks/set_featured_speaker')
 
@@ -672,7 +686,7 @@ class ConferenceApi(remote.Service):
         return SessionForms(items=[self._copySessionToForm(sn) for sn in sessions])    # noqa
 
     @endpoints.method(SESSION_BY_SPEAKER, SessionForms,
-                      path='sessions/{speaker}',
+                      path='sessions/{websafeSpeakerKey}',
                       http_method='GET', name='getSessionsBySpeaker')
     def getSessionsBySpeaker(self, request):
         """Given a speaker, return all sessions given by this particular speaker,

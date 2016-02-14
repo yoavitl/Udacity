@@ -12,17 +12,19 @@ the models i used are strings for the text fields like name, highlight and type 
 I used "webSafeConfId" to link between the session to the conference, so each session
 created must have an existing conference in order to regiser it in the database. 
 I added also models and forms for the speaker and implemented them- you can create 
-entity for speaker and show all of the speakers registered. I didn't made them required 
-for the session because only importent speakers should have their identity.
+entity for speaker and show all of the speakers registered. 
+So I incorporated the Speaker entity inside the session creation model, so besides
+the conference key, the user needs to input the speaker key as well.
 
 ### Task 1
 ##### Added functioncs
 - `conference.getConferenceSessions()` - The user inputs a confrence webkey, and he gets all the sessions happening in the conference. 
 - `conference.getSessionsByType()` - The user inputs a session type -lecture, keynote, workshop etc... and gets all of the session in this type 
-- `conference.getSessionsBySpeaker()` - The user inputs a speaker name and he get all of the sessions in all of the conferences that this speaker participates in
+- `conference.getSessionsBySpeaker()` - The user inputs a speaker Key and he get all of the sessions in all of the conferences that this speaker participates in
 - `conference.createSession()` - The user can create a session inside a conference
 - `conference.createspeaker()` - The user can create entity for a speaker
 - `conference.showSpeakers()` - Display the name of all the availble speakers 	
+
 ##### Added models 
 - `Session` - create the database model of the session
 - `SessionForm` - the response of creating a session
@@ -30,6 +32,7 @@ for the session because only importent speakers should have their identity.
 - `Speaker` - create the database model of a speaker
 - `SpeakerForm` - the response of creating a speaker
 - `SpeakerForms` - model to gather all the speakers toghether
+
 ### Task 2
 ##### Added functioncs
 - `conference.addSessionToWishlist()` - Add a session by his webkey to a user whishlist    
